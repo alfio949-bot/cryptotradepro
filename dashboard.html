@@ -1344,7 +1344,7 @@ let klineWS2;
 function connectKlineWS(iv) {
   if(klineWS2){try{klineWS2.close();}catch(_){}klineWS2=null;}
   const pair = S.currentPair.toLowerCase();
-  const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair}    }@kline_${iv}`);
+  const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair}@kline_${iv}`);
   klineWS=ws;
   ws.onmessage = e => {
     const k=JSON.parse(e.data).k;
@@ -2561,7 +2561,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if(posPage && posPage.classList.contains('active') && S.btmTab==='positions') renderBtm();
   }, 1000);
 });
-// ──────────────────────────────────────────────────────────────
 </script>
 
 <!-- ══════════════════════════════════════════════════════════════

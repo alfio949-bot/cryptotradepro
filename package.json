@@ -1,5 +1,6 @@
 {
   "devDependencies": {
-    "acorn": "^8.17.0"
+    "acorn": "^8.17.0",
+    "esprima": "^4.0.1"
   }
 }
