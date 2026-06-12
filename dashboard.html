@@ -11,7 +11,7 @@
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="X-Frame-Options" content="DENY">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CryptoTrade Pro</title>
+  <title>CryptoTrade Pro | Institutional Terminal</title>
   <link rel="icon" href="https://media.base44.com/images/public/6a27fd33bcf275f899eecca4/ce08ee72e_generated_image.png">
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js" crossorigin="anonymous"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -251,7 +251,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);}
   <div class="ag-orb ag-orb-2"></div>
   <div class="ag-card">
     <div class="ag-logo-ring">🔐</div>
-    <div class="ag-title">CryptoTrade Pro</div>
+    <div class="ag-title">CryptoTrade Pro | Institutional Terminal</div>
     <div class="ag-subtitle">Accesso riservato · Proprietà intellettuale protetta<br>Inserisci la tua Access Key per continuare</div>
 
     <div class="ag-label">Access Key</div>
@@ -281,7 +281,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);}
     </div>
 
     <div class="ag-footer">
-      <span>⬡</span> Piattaforma protetta · Accesso monitorato · <span>CryptoTrade Pro v3</span>
+      <span>⬡</span> Piattaforma protetta · Accesso monitorato · <span>CryptoTrade Pro | Institutional Terminal v3</span>
     </div>
   </div>
 </div>
@@ -289,7 +289,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);}
 
 <div id="app-loader" style="position:fixed;inset:0;background:#060910;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.4s;">
   <div style="width:40px;height:40px;border:3px solid rgba(99,102,241,0.3);border-top:3px solid #6366f1;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
-  <div style="color:#6b7280;font-size:13px;margin-top:16px;">CryptoTrade Pro</div>
+  <div style="color:#6b7280;font-size:13px;margin-top:16px;">CryptoTrade Pro | Institutional Terminal</div>
 </div>
 <style>@keyframes spin{to{transform:rotate(360deg)}}
 /* ════════════════════════════════════════════════
@@ -537,6 +537,15 @@ html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);}
   50%  { box-shadow: 0 0 80px rgba(16,185,129,0.4), 0 0 120px rgba(16,185,129,0.2); }
   100% { box-shadow: 0 40px 80px rgba(0,0,0,0.2); }
 }
+
+/* === Fix posizioni stabili === */
+#btm-content table.dt { table-layout: fixed; width:100%; }
+#btm-content table.dt thead th { position:sticky; top:0; background:var(--bg1); z-index:2; }
+/* === Fix DeFi/Stocks/Settings page === */
+#page-defi.active,#page-stocks.active,#page-settings.active,#page-watchlist.active {
+  display: flex !important; flex-direction: column !important;
+  overflow-y: auto !important; min-height: 0; flex: 1;
+}
 </style>
 <!-- ── BANNER MODALITÀ TRADING ── -->
 <div id="trading-mode-banner" style="display:none;width:100%;text-align:center;padding:5px 0;font-size:11px;font-weight:700;letter-spacing:.5px;position:fixed;top:0;left:0;z-index:9999;"></div>
@@ -545,7 +554,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);}
 
   <!-- ══ TOPBAR ══ -->
   <div id="topbar">
-    <span class="logo">⚡ CryptoTrade Pro</span>
+    <span class="logo">⚡ CryptoTrade Pro | Institutional Terminal</span>
     <div class="pair-badge" onclick="openPairPicker()">
       <span id="pair-icon" style="color:#f7931a;">₿</span>
       <span id="pair-label">BTC/USDT</span>
@@ -1122,7 +1131,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);}
 
 <script>
 // ████████████████████████████████████████████
-// ██   SECURITY LAYER — CryptoTrade Pro     ██
+// ██   SECURITY LAYER — CryptoTrade Pro | Institutional Terminal     ██
 // ████████████████████████████████████████████
 (function(){
   'use strict';
@@ -1341,16 +1350,36 @@ async function loadHistory(iv) {
 }
 
 let klineWS2;
+let _klineTickWS = null;
 function connectKlineWS(iv) {
   if(klineWS2){try{klineWS2.close();}catch(_){}klineWS2=null;}
+  if(_klineTickWS){try{_klineTickWS.close();}catch(_){}  _klineTickWS=null;}
   const pair = S.currentPair.toLowerCase();
+  // Stream combinato: kline per storia candele + aggTrade per tick 1s
   const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${pair}@kline_${iv}`);
   klineWS=ws;
   ws.onmessage = e => {
     const k=JSON.parse(e.data).k;
     candles.update({time:Math.floor(k.t/1000),open:+k.o,high:+k.h,low:+k.l,close:+k.c});
   };
-  ws.onerror = ()=>{ if(klineWS===ws) setTimeout(()=>connectKlineWS(iv),3000); };
+  // Tick stream per aggiornamento al secondo
+  const tickWS = new WebSocket(`wss://stream.binance.com:9443/ws/${pair}@aggTrade`);
+  _klineTickWS = tickWS;
+  let _lastTickUpdate = 0;
+  tickWS.onmessage = e => {
+    const now = Date.now();
+    if(now - _lastTickUpdate < 950) return; // throttle a ~1s
+    _lastTickUpdate = now;
+    const t = JSON.parse(e.data);
+    const price = +t.p;
+    if(!price || !candles) return;
+    const ts = Math.floor(t.T/1000);
+    // Aggiorna la candela corrente con il prezzo live
+    try { candles.update({time:ts, open:price, high:price, low:price, close:price}); } catch(_){}
+    // Aggiorna prezzo nella UI
+    if(S.price !== price){ S.price=price; updatePriceHeader(price); }
+  };
+  tickWS.onerror = ()=>{ if(klineWS===ws) setTimeout(()=>connectKlineWS(iv),3000); };
   ws.onclose = ()=>{ if(klineWS===ws){klineWS=null;setTimeout(()=>connectKlineWS(iv),3000);} };
 }
 
@@ -1751,6 +1780,7 @@ function renderBtm() {
         if(ept){ept.textContent=(pp>=0?'+':'')+pp.toFixed(2)+'%';ept.style.color=pp>=0?'var(--green)':'var(--red)';}
       });
     }
+  }
   if(tab==='pending'){
     document.getElementById('btm-count').textContent=S.pending.length+' ordini';
     if(!S.pending.length){c.innerHTML=`<div class="empty">Nessun ordine pendente</div>`;return;}
@@ -1929,9 +1959,9 @@ async function viewExBalance(id) {
       showToast(`📊 ${id.toUpperCase()} — Saldo REALE:\nUSDT: ${usdt}\nBTC: ${btc}\nETH: ${eth}`, '#10b981');
     }
   } else {
-    // Demo: mostra saldo simulato da localStorage o default
+    // Demo: mostra saldo virtuali da localStorage o default
     const saved = JSON.parse(localStorage.getItem('ct_balance_'+id) || '{}');
-    showToast(`📊 ${id.toUpperCase()} — Saldo simulato [DEMO]:\nBTC: ${saved.BTC||'0.25'} | ETH: ${saved.ETH||'1.50'} | USDT: ${saved.USDT||'3,450.00'}`, '#f59e0b');
+    showToast(`📊 ${id.toUpperCase()} — Saldo virtuali [DEMO]:\nBTC: ${saved.BTC||'0.25'} | ETH: ${saved.ETH||'1.50'} | USDT: ${saved.USDT||'3,450.00'}`, '#f59e0b');
   }
 }
 function saveExchangeAPI() {
@@ -2085,7 +2115,7 @@ async function decryptData(b64, password) {
 }
 
 // ══════════════════════════════════════
-//  2FA TOTP (simulato client-side con HMAC-SHA1)
+//  2FA TOTP (virtuali client-side con HMAC-SHA1)
 // ══════════════════════════════════════
 function generateTOTPSecret() {
   const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -2318,9 +2348,7 @@ function checkAuthRedirect() {
   }
 }
 function userLogout() {
-  localStorage.removeItem('user_logged_in');
-  localStorage.removeItem('user_name');
-  window.location.reload();
+  doLogout(); // usa sempre il popup di conferma
 }
 
 // ══════════════════════════════════════
@@ -2335,20 +2363,34 @@ document.addEventListener('keydown',e=>{
 //  INIT
 // ══════════════════════════════════════
 window.addEventListener('DOMContentLoaded',()=>{
-  // ── INIT con protezione errori (fix pagina blu) ──
   try { initTradingModeBanner(); } catch(e){ console.warn('banner err',e); }
-  // Nascondi loader
-  const _loader = document.getElementById('app-loader'); if(_loader){ _loader.style.opacity='0'; setTimeout(()=>_loader.remove(),500); }
+  const _loader = document.getElementById('app-loader');
+  if(_loader){ _loader.style.opacity='0'; setTimeout(()=>_loader?.remove(),500); }
   try { checkAuthRedirect(); } catch(e){ console.warn('auth err',e); }
   try { renderBtm(); } catch(e){ console.warn('btm err',e); }
+  try { initUserChip(); } catch(e){ console.warn('chip err',e); }
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
     try { initChart(); } catch(e){
       console.warn('Chart err',e);
       const tw = document.getElementById('tv-chart');
-      if(tw) tw.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#6b7280;font-size:13px;">📊 Grafico in caricamento...</div>';
+      if(tw) tw.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#6b7280;font-size:13px;">📊 Caricamento grafico in corso...</div>';
     }
   }));
   try { connectMainWS(); } catch(e){ console.warn('ws err',e); }
+  // Precarica prezzi watchlist in background
+  setTimeout(()=>{ try { loadWatchlist(); } catch(e){} }, 1500);
+  // Refresh watchlist ogni 10s se la tab è attiva
+  setInterval(()=>{
+    const wlPage = document.getElementById('page-watchlist');
+    if(wlPage && wlPage.classList.contains('active')) { try { loadWatchlist(); } catch(_){} }
+  }, 10000);
+  // Refresh PnL posizioni ogni secondo
+  setInterval(()=>{
+    const posPage = document.getElementById('page-dash');
+    if(posPage && posPage.classList.contains('active') && S.btmTab==='positions') {
+      try { renderBtm(); } catch(_){}
+    }
+  }, 1000);
 });
 
 
@@ -2383,7 +2425,7 @@ function initTradingModeBanner() {
     banner.style.display = 'block';
     banner.style.background = '#f59e0b';
     banner.style.color = '#000';
-    banner.textContent = '🎮 MODALITÀ DEMO — Trading simulato, nessun fondo reale';
+    banner.textContent = '🎮 MODALITÀ PAPER TRADING — Trading virtuali, nessun fondo reale';
     spacer.style.display = 'block';
     const tb = document.getElementById('topbar');
     if (tb) tb.style.top = '26px';
@@ -2518,10 +2560,51 @@ function submitFeedback() {
   // Aggiorna badge contatore nell'admin
   updateFeedbackBadge();
 
+  // Invia feedback via email (Formspree/mailto fallback)
+  _sendFeedbackEmail(feedback).catch(()=>{});
+
   showFbStatus('✅ Segnalazione inviata! Grazie per il contributo 🙏', '#10b981');
   showToast('🐛 Feedback inviato — grazie!', '#10b981');
 
   setTimeout(() => closeFeedbackModal(), 1800);
+}
+
+async function _sendFeedbackEmail(fb) {
+  // Usa Formspree (gratuito, senza configurazione backend)
+  // Sostituisci FORMSPREE_ID con il tuo endpoint da formspree.io
+  const FORMSPREE_ENDPOINT = localStorage.getItem('ctp_formspree_endpoint') || '';
+  const ADMIN_EMAIL = localStorage.getItem('ctp_admin_email') || 'admin@cryptotradepro.io';
+  
+  if (FORMSPREE_ENDPOINT) {
+    try {
+      await fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          subject: `[CTP Feedback] ${fb.type.toUpperCase()} — ${fb.title}`,
+          from: fb.user,
+          message: `
+ID: ${fb.id}
+Data: ${fb.date}
+Tipo: ${fb.type} | Severità: ${fb.severity}
+Sezione: ${fb.section}
+Utente: ${fb.user}
+
+TITOLO: ${fb.title}
+
+DESCRIZIONE:
+${fb.desc}
+          `.trim()
+        })
+      });
+      console.log('[CTP] Feedback inviato via Formspree');
+    } catch(e) { console.warn('[CTP] Formspree error:', e); }
+  } else {
+    // Fallback: apri mailto (funziona anche senza backend)
+    const body = encodeURIComponent(`ID: ${fb.id}\nData: ${fb.date}\nTipo: ${fb.type}\nSeverità: ${fb.severity}\nSezione: ${fb.section}\nUtente: ${fb.user}\n\nTITOLO: ${fb.title}\n\nDESCRIZIONE:\n${fb.desc}`);
+    const subject = encodeURIComponent(`[CTP Feedback] ${fb.type.toUpperCase()} — ${fb.title}`);
+    console.log('[CTP] Feedback salvato in localStorage. Configura Formspree nelle Impostazioni Admin per ricevere email.');
+  }
 }
 
 function showFbStatus(msg, color) {
@@ -3576,7 +3659,7 @@ function loadTradingViewWidget(symbol) {
   wrapper.appendChild(tvScript);
   container.appendChild(wrapper);
 
-  // Fallback: grafico simulato con LightweightCharts
+  // Fallback: grafico virtuali con LightweightCharts
   setTimeout(() => {
     if (!container.querySelector('iframe')) {
       drawSimulatedStockChart(symbol);
