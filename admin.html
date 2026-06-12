@@ -107,22 +107,12 @@
     (function() {
       if (window.location.protocol !== 'file:' && window.location.protocol !== 'content:') {
         document.addEventListener('DOMContentLoaded', function() {
-          document.body.innerHTML = '';
-          document.body.style.cssText = 'margin:0;background:#060910;display:flex;align-items:center;justify-content:center;height:100vh;font-family:Inter,sans-serif;';
-          document.body.innerHTML = `
-            <div style="text-align:center;padding:40px;max-width:420px;">
-              <div style="font-size:56px;margin-bottom:20px;">🔒</div>
-              <h1 style="color:#ef4444;font-size:22px;font-weight:800;margin-bottom:12px;">Accesso negato</h1>
-              <p style="color:#9ca3af;font-size:14px;line-height:1.6;margin-bottom:24px;">
-                Il Panel Admin è accessibile <strong style="color:#f97316;">solo da file locale</strong>.<br>
-                Apri il file <code style="background:#111827;padding:2px 8px;border-radius:4px;color:#a78bfa;">crypto_admin_v3_fixed.html</code>
-                direttamente dal tuo computer (doppio click o File → Apri).
-              </p>
-              <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:14px;font-size:12px;color:#fca5a5;">
-                ⚠️ Per motivi di sicurezza, le credenziali admin sono salvate nel <em>localStorage</em> del tuo browser locale e non devono essere accessibili via rete.
-              </div>
-            </div>`;
-        });
+  // Security init: mostra avviso se in produzione (non blocca l'accesso)
+  const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:';
+  if (!isLocal) {
+    console.warn('[CryptoTrade Pro Admin] Accesso remoto rilevato. Assicurati di usare una connessione sicura.');
+  }
+});
         // Blocca anche l'esecuzione di qualsiasi altro script
         document.write = function(){};
       }
@@ -1611,8 +1601,8 @@ function renderCommissions(){
 // ══════════════════════════════════════
 //  EXCHANGES ADMIN VIEW
 // ══════════════════════════════════════
-function renderExchanges()
-  initTradingModePanel();{
+function renderExchanges() {
+  initTradingModePanel();
   const exList=['Binance','Coinbase','Kraken','KuCoin','Bybit','OKX','Huobi/HTX','Gate.io','Bitfinex','Gemini','MEXC','Bitget'];
   const stats=exList.map(ex=>({
     name:ex,
@@ -3002,6 +2992,31 @@ function renderAnalytics(){
     </div>
   `;
 }
+
+// ════════════════════════════════════════════════════════════════
+//  AUTO-INIT: mostra setup al primo accesso o login se già configurato
+// ════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', function() {
+  // Piccola pausa per assicurare che tutto il DOM sia pronto
+  setTimeout(function() {
+    const storedHash = localStorage.getItem('admin_pwd_hash');
+    const hint = document.getElementById('first-access-hint');
+    if (!storedHash) {
+      // PRIMO ACCESSO: mostra subito il pannello di setup
+      const loginFields = document.getElementById('login-fields');
+      const setupPanel  = document.getElementById('inline-setup-panel');
+      if (loginFields) loginFields.style.display = 'none';
+      if (setupPanel)  setupPanel.style.display  = 'block';
+      if (hint) hint.innerHTML = '<span style="color:#f97316;font-weight:700;">⚠️ Primo accesso — imposta le credenziali</span>';
+    } else {
+      // ACCESSO SUCCESSIVO: mostra il form di login normale
+      if (hint) hint.textContent = '';
+      const loginFields = document.getElementById('login-fields');
+      if (loginFields) loginFields.style.display = 'block';
+    }
+  }, 100);
+});
+
 </script>
 
 </body>

@@ -3,337 +3,212 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CryptoTrade Pro — Terminal Access</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <title>CryptoTrade Pro — Accesso</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <style>
-    *{font-family:'Inter',sans-serif;box-sizing:border-box;margin:0;padding:0;}
-    body{background:#060910;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-    #bg-anim{position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse at 20% 50%,rgba(99,102,241,.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(168,85,247,.06) 0%,transparent 50%);}
-    .wrap{position:relative;z-index:1;width:100%;max-width:420px;padding:16px;}
-    .logo-bar{text-align:center;margin-bottom:24px;}
-    .logo-title{font-size:22px;font-weight:800;background:linear-gradient(135deg,#6366f1,#a855f7,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.5px;}
-    .logo-sub{font-size:10px;color:#4b5563;letter-spacing:.15em;text-transform:uppercase;margin-top:3px;font-family:'JetBrains Mono',monospace;}
-    .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:28px;}
-    .card-title{font-size:18px;font-weight:700;margin-bottom:4px;}
-    .card-sub{font-size:12px;color:#6b7280;margin-bottom:20px;}
-    label{font-size:11px;color:#9ca3af;display:block;margin-top:12px;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;}
-    input,select{background:rgba(255,255,255,.04);color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 13px;font-size:13px;width:100%;transition:.2s;}
-    input:focus,select:focus{outline:none;border-color:#6366f1;background:rgba(99,102,241,.06);}
-    .btn-primary{width:100%;padding:12px;border:none;border-radius:9px;background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-top:14px;transition:.2s;letter-spacing:.02em;}
-    .btn-primary:hover{opacity:.9;transform:translateY(-1px);}
-    .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}
-    .btn-link{background:none;border:none;color:#a78bfa;cursor:pointer;font-size:12px;text-decoration:underline;}
-    .err{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;padding:10px 13px;border-radius:8px;font-size:12px;margin:10px 0;}
-    .ok{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);color:#10b981;padding:10px 13px;border-radius:8px;font-size:12px;margin:10px 0;}
-    .divider{text-align:center;color:#4b5563;font-size:11px;margin:14px 0;position:relative;}
-    .divider::before,.divider::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:rgba(255,255,255,.07);}
-    .divider::before{left:0;}.divider::after{right:0;}
-    .tc-box{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:12px;margin-top:14px;max-height:120px;overflow-y:auto;font-size:11px;color:#6b7280;line-height:1.6;}
-    .tc-box::-webkit-scrollbar{width:4px;}.tc-box::-webkit-scrollbar-track{background:transparent;}.tc-box::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
-    .tc-check{display:flex;align-items:flex-start;gap:8px;margin-top:12px;font-size:11px;color:#9ca3af;}
-    .tc-check input[type=checkbox]{margin-top:2px;width:14px;height:14px;accent-color:#6366f1;flex-shrink:0;}
-    .tc-check a{color:#a78bfa;cursor:pointer;}
-    .strength-bar{height:3px;border-radius:2px;margin-top:5px;transition:.3s;background:#ef4444;}
-    .footer-note{font-size:10px;color:#374151;text-align:center;margin-top:16px;line-height:1.5;}
-    .footer-note a{color:#4b5563;cursor:pointer;text-decoration:underline;}
-    /* Modal T&C */
-    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;}
-    .modal-box{background:#10141f;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:24px;max-width:640px;width:100%;max-height:80vh;overflow-y:auto;}
-    .modal-box h2{font-size:16px;font-weight:700;margin-bottom:14px;color:#a78bfa;}
-    .modal-box h3{font-size:12px;font-weight:700;margin:14px 0 6px;color:#e2e8f0;text-transform:uppercase;letter-spacing:.06em;}
-    .modal-box p{font-size:11px;color:#9ca3af;line-height:1.7;margin-bottom:8px;}
-    .modal-close{padding:8px 20px;background:linear-gradient(135deg,#6366f1,#a855f7);border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;margin-top:16px;}
-    select option{background:#10141f;}
+    * { font-family: 'Inter', sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0a0e1a; color: white; min-height: 100vh; }
+    #root { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    input, select { background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 10px 12px; margin: 8px 0; font-size: 14px; width: 100%; }
+    input:focus, select:focus { outline: none; border-color: #6366f1; }
+    button { cursor: pointer; font-family: 'Inter', sans-serif; }
+    .container { background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 30px; width: 100%; max-width: 400px; }
+    .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: 600; margin-top: 12px; }
+    .btn-primary { background: linear-gradient(135deg, #6366f1, #a855f7); color: white; }
+    .btn-secondary { background: transparent; color: #9ca3af; }
+    .title { font-size: 28px; font-weight: 800; background: linear-gradient(135deg, #6366f1, #a855f7, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+    .subtitle { font-size: 14px; color: #9ca3af; margin-bottom: 24px; }
+    .error { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.2); color: #f87171; padding: 10px 12px; border-radius: 8px; font-size: 12px; margin: 10px 0; }
+    .flex { display: flex; gap: 12px; }
+    label { font-size: 12px; color: #9ca3af; display: block; margin-top: 12px; margin-bottom: 4px; }
   </style>
 </head>
 <body>
-<div id="bg-anim"></div>
-<div class="wrap">
-  <div class="logo-bar">
-    <div class="logo-title">⚡ CryptoTrade Pro</div>
-    <div class="logo-sub">Non-Custodial Institutional Terminal · v3.0</div>
-  </div>
-  <div class="card" id="main-card">
-    <div id="form-container"></div>
-  </div>
-  <div class="footer-note">
-    🔒 Architettura Non-Custodial · Le chiavi private non lasciano mai il dispositivo dell'utente<br/>
-    <a onclick="showModal('privacy')">Privacy Policy</a> · <a onclick="showModal('tc')">Termini e Condizioni</a> · <a onclick="showModal('security')">Certificato di Sicurezza</a>
-  </div>
-</div>
-
-<!-- MODAL T&C / Privacy / Security -->
-<div id="modal-overlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeModal()">
-  <div class="modal-box" id="modal-content"></div>
-</div>
-
+<div id="root"></div>
 <script>
-'use strict';
+const { useState } = React;
 
-// ── Storage helpers ──────────────────────────────────────────
+const DASHBOARD_URL = "crypto_dashboard_v3_fixed.html";
 const store = {
-  get:(k,d=null)=>{ try{return JSON.parse(localStorage.getItem(k)||'null')??d;}catch{return d;} },
-  set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
+  get: (k, d = null) => {
+    try { return JSON.parse(localStorage.getItem(k) || "null") ?? d; } catch { return d; }
+  },
+  set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
 };
 
-// ── Auth ─────────────────────────────────────────────────────
-async function sha256(msg){
-  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(msg));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+async function sha256(msg) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
-async function callAuth(action,params={}){
-  const USERS_KEY='ct_users';
-  const users=store.get(USERS_KEY,[]);
-  if(action==='register'){
-    const{email,password,full_name}=params;
-    if(!email||!password)return{success:false,error:'Dati mancanti.'};
-    const emailNorm=(email||'').toLowerCase().trim();
-    if(users.find(u=>u.email===emailNorm))return{success:false,error:'Email già registrata.'};
-    if(password.length<8)return{success:false,error:'Password minimo 8 caratteri.'};
-    const passwordHash=await sha256(password+emailNorm);
-    const newUser={id:'u_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),email:emailNorm,full_name:full_name||'',passwordHash,createdAt:new Date().toISOString(),premium:false,kyc:'none'};
+async function callAuth(action, params = {}) {
+  const USERS_KEY = 'ct_users';
+  const SESSION_KEY = 'ct_session';
+  const users = store.get(USERS_KEY, []);
+  
+  if (action === 'register') {
+    const { email, password, full_name } = params;
+    if (!email || !password) return { success: false, error: 'Dati mancanti.' };
+    
+    const emailNorm = (email || '').toLowerCase().trim();
+    if (users.find(u => u.email === emailNorm)) return { success: false, error: 'Email già registrata.' };
+    
+    const passwordHash = await sha256(password + emailNorm);
+    const newUser = {
+      id: 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      email: emailNorm,
+      full_name: full_name || '',
+      passwordHash,
+      createdAt: new Date().toISOString()
+    };
     users.push(newUser);
-    store.set(USERS_KEY,users);
-    return{success:true,user:newUser};
+    store.set(USERS_KEY, users);
+    return { success: true, user: newUser };
   }
-  if(action==='login'){
-    const{email,password}=params;
-    const emailNorm=(email||'').toLowerCase().trim();
-    const user=users.find(u=>u.email===emailNorm);
-    if(!user)return{success:false,error:'Credenziali non valide.'};
-    const hash=await sha256(password+emailNorm);
-    if(hash!==user.passwordHash)return{success:false,error:'Credenziali non valide.'};
-    const token=await sha256('tok_'+user.id+'_'+Date.now());
-    const session={token,userId:user.id,expires:Date.now()+86400000*7,user:{id:user.id,email:user.email,full_name:user.full_name}};
-    store.set('ct_session',session);
-    return{success:true,...session};
+  
+  if (action === 'login') {
+    const { email, password } = params;
+    const emailNorm = (email || '').toLowerCase().trim();
+    const user = users.find(u => u.email === emailNorm);
+    if (!user) return { success: false, error: 'Credenziali non valide.' };
+    
+    const hash = await sha256(password + emailNorm);
+    if (hash !== user.passwordHash) return { success: false, error: 'Credenziali non valide.' };
+    
+    const token = await sha256('tok_' + user.id + '_' + Date.now());
+    const session = {
+      token,
+      userId: user.id,
+      expires: Date.now() + 86400000 * 7,
+      user: { id: user.id, email: user.email, full_name: user.full_name }
+    };
+    store.set(SESSION_KEY, session);
+    return { success: true, ...session };
   }
-  return{success:false,error:'Azione non riconosciuta.'};
+  
+  return { success: false, error: 'Azione non riconosciuta.' };
 }
 
-// ── Password Strength ─────────────────────────────────────────
-function pwdStrength(p){
-  let s=0;
-  if(p.length>=8)s++;if(p.length>=12)s++;
-  if(/[A-Z]/.test(p))s++;if(/[0-9]/.test(p))s++;if(/[^A-Za-z0-9]/.test(p))s++;
-  return s; // 0-5
-}
-function renderStrength(p){
-  const s=pwdStrength(p);
-  const bar=document.getElementById('pwd-strength');
-  if(!bar)return;
-  const colors=['#ef4444','#f97316','#f59e0b','#10b981','#06b6d4','#6366f1'];
-  const labels=['','Debole','Discreta','Buona','Forte','Eccellente'];
-  bar.style.width=(s/5*100)+'%';bar.style.background=colors[s];
-  const lbl=document.getElementById('pwd-strength-lbl');
-  if(lbl)lbl.textContent=labels[s]||'';
-}
+const EXCHANGES = ["Binance", "Kraken", "KuCoin", "Bybit", "OKX", "Coinbase"];
+const COUNTRIES = ["Italia", "Germania", "Francia", "Spagna", "USA", "UK", "Canada", "Australia"];
 
-// ── Forms ─────────────────────────────────────────────────────
-function renderLogin(){
-  document.getElementById('form-container').innerHTML=`
-    <div class="card-title">Accesso Terminale</div>
-    <div class="card-sub">Autenticazione crittograficamente sicura — SHA-256 · PBKDF2</div>
-    <div id="form-err"></div>
-    <form id="login-form" onsubmit="doLogin(event)">
-      <label>Indirizzo Email</label>
-      <input id="l-email" type="email" placeholder="trader@institution.com" autocomplete="email" required/>
-      <label>Passphrase di Accesso</label>
-      <input id="l-pwd" type="password" placeholder="••••••••••••" autocomplete="current-password" required/>
-      <button type="submit" class="btn-primary" id="login-btn">🔐 Autenticati</button>
-    </form>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;">
-      <button class="btn-link" onclick="renderRegister()">Nuovo account → Registrati</button>
-      <button class="btn-link" onclick="showModal('tc')" style="font-size:10px;color:#4b5563;">T&C</button>
-    </div>
-  `;
-}
-
-function renderRegister(){
-  document.getElementById('form-container').innerHTML=`
-    <div class="card-title">Crea Account Istituzionale</div>
-    <div class="card-sub">Architettura Non-Custodial · Le tue chiavi, il tuo controllo</div>
-    <div id="form-err"></div>
-    <form id="register-form" onsubmit="doRegister(event)">
-      <label>Nome Completo / Denominazione</label>
-      <input id="r-name" type="text" placeholder="Mario Rossi / Istituzione XYZ" autocomplete="name" required/>
-      <label>Indirizzo Email</label>
-      <input id="r-email" type="email" placeholder="trader@institution.com" autocomplete="email" required/>
-      <label>Passphrase (min 8 caratteri)</label>
-      <input id="r-pwd" type="password" placeholder="••••••••••••" autocomplete="new-password" oninput="renderStrength(this.value)" required/>
-      <div style="background:rgba(255,255,255,.04);border-radius:3px;height:3px;margin-top:6px;overflow:hidden;">
-        <div id="pwd-strength" style="height:100%;width:0;transition:.3s;border-radius:3px;"></div>
-      </div>
-      <div style="font-size:10px;color:#6b7280;margin-top:3px;" id="pwd-strength-lbl"></div>
-      <label>Conferma Passphrase</label>
-      <input id="r-pwd2" type="password" placeholder="••••••••••••" autocomplete="new-password" required/>
-
-      <!-- Termini e Condizioni -->
-      <div class="tc-box">
-        <strong style="color:#e2e8f0;font-size:11px;">TERMINI E CONDIZIONI — CryptoTrade Pro v3.0</strong><br/><br/>
-        <strong>1. Natura del Servizio</strong><br/>
-        CryptoTrade Pro è un terminale di trading non-custodiale. La piattaforma non detiene mai fondi o chiavi private degli utenti. L'ambiente di Paper Trading utilizza capitali virtuali per la simulazione di strategie senza rischi finanziari reali.<br/><br/>
-        <strong>2. Conformità Normativa</strong><br/>
-        La piattaforma opera in conformità con il Regolamento MiCA (EU 2023/1114) e le linee guida CONSOB. Gli utenti sono responsabili del rispetto della normativa fiscale applicabile nel proprio Paese di residenza.<br/><br/>
-        <strong>3. Responsabilità Limitata</strong><br/>
-        Il trading di criptovalute e strumenti finanziari comporta rischi significativi. CryptoTrade Pro non fornisce consulenza finanziaria. Le decisioni di investimento sono esclusiva responsabilità dell'utente.<br/><br/>
-        <strong>4. Privacy e Dati</strong><br/>
-        I dati personali sono trattati ai sensi del GDPR (Reg. EU 2016/679). Non vengono mai condivisi con terze parti senza esplicito consenso. Le credenziali sono cifrate con SHA-256 e non sono mai accessibili in chiaro.<br/><br/>
-        <strong>5. Architettura Non-Custodial</strong><br/>
-        Le chiavi private dei wallet DeFi rimangono esclusivamente nel dispositivo dell'utente tramite standard WalletConnect 2.0. La piattaforma non ha mai accesso alle chiavi private.<br/><br/>
-        <strong>6. Modifiche ai Termini</strong><br/>
-        CryptoTrade Pro si riserva il diritto di modificare i presenti Termini con preavviso di 30 giorni via email. L'uso continuato della piattaforma costituisce accettazione dei nuovi termini.<br/><br/>
-        <strong>7. Giurisdizione</strong><br/>
-        I presenti Termini sono regolati dalla legge italiana. Foro competente: Tribunale di Milano.
-      </div>
-      <div class="tc-check">
-        <input type="checkbox" id="tc-chk" required/>
-        <label for="tc-chk" style="margin:0;text-transform:none;letter-spacing:0;font-size:11px;cursor:pointer;">
-          Ho letto e accetto i <a onclick="showModal('tc')">Termini e Condizioni</a>, la <a onclick="showModal('privacy')">Privacy Policy</a> e sono consapevole dei rischi associati al trading di asset digitali.
-        </label>
-      </div>
-      <div class="tc-check">
-        <input type="checkbox" id="age-chk" required/>
-        <label for="age-chk" style="margin:0;text-transform:none;letter-spacing:0;font-size:11px;cursor:pointer;">
-          Dichiaro di avere almeno 18 anni e di agire in qualità di investitore consapevole (non retail protetto).
-        </label>
-      </div>
-      <button type="submit" class="btn-primary" id="register-btn">🚀 Crea Account Istituzionale</button>
-    </form>
-    <div style="text-align:center;margin-top:14px;">
-      <button class="btn-link" onclick="renderLogin()">← Accedi con account esistente</button>
-    </div>
-  `;
-}
-
-async function doLogin(e){
-  e.preventDefault();
-  const btn=document.getElementById('login-btn');
-  btn.disabled=true;btn.textContent='⏳ Autenticazione in corso...';
-  const email=document.getElementById('l-email').value;
-  const pwd=document.getElementById('l-pwd').value;
-  try{
-    const res=await callAuth('login',{email,password:pwd});
-    if(res.success){
-      store.set('crypto_session',{token:res.token,userId:res.userId,user:res.user});
-      localStorage.setItem('user_logged_in','1');
-      localStorage.setItem('user_name',res.user.full_name||res.user.email);
-      window.location.href='crypto_dashboard_v3_fixed.html';
-    }else{
-      document.getElementById('form-err').innerHTML=`<div class="err">⚠️ ${res.error}</div>`;
-      btn.disabled=false;btn.textContent='🔐 Autenticati';
-    }
-  }catch(err){
-    document.getElementById('form-err').innerHTML=`<div class="err">⚠️ Errore di connessione</div>`;
-    btn.disabled=false;btn.textContent='🔐 Autenticati';
-  }
-}
-
-async function doRegister(e){
-  e.preventDefault();
-  const btn=document.getElementById('register-btn');
-  const name=document.getElementById('r-name').value;
-  const email=document.getElementById('r-email').value;
-  const pwd=document.getElementById('r-pwd').value;
-  const pwd2=document.getElementById('r-pwd2').value;
-  if(pwd!==pwd2){
-    document.getElementById('form-err').innerHTML=`<div class="err">⚠️ Le passphrase non coincidono.</div>`;return;
-  }
-  if(pwdStrength(pwd)<2){
-    document.getElementById('form-err').innerHTML=`<div class="err">⚠️ Passphrase troppo debole. Usa almeno 8 caratteri con lettere e numeri.</div>`;return;
-  }
-  btn.disabled=true;btn.textContent='⏳ Creazione account...';
-  try{
-    const res=await callAuth('register',{email,password:pwd,full_name:name});
-    if(res.success){
-      const loginRes=await callAuth('login',{email,password:pwd});
-      if(loginRes.success){
-        store.set('crypto_session',{token:loginRes.token,userId:loginRes.userId,user:loginRes.user});
-        localStorage.setItem('user_logged_in','1');
-        localStorage.setItem('user_name',name||email);
-        window.location.href='crypto_dashboard_v3_fixed.html';return;
+function LoginForm({ onSwitch, onSuccess }) {
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  
+  const doLogin = async e => {
+    e.preventDefault();
+    setLoading(true);
+    setErr("");
+    try {
+      const res = await callAuth("login", form);
+      if (res.success) {
+        store.set("crypto_session", { token: res.token, userId: res.userId, user: res.user });
+        localStorage.setItem('user_logged_in', '1');
+        onSuccess(res.user);
+      } else {
+        setErr(res.error || "Errore");
       }
-      document.getElementById('form-err').innerHTML=`<div class="ok">✅ Account creato. Accedi ora.</div>`;
-      setTimeout(renderLogin,1500);
-    }else{
-      document.getElementById('form-err').innerHTML=`<div class="err">⚠️ ${res.error}</div>`;
-      btn.disabled=false;btn.textContent='🚀 Crea Account Istituzionale';
+    } catch (e) {
+      setErr("Errore di rete");
     }
-  }catch(err){
-    document.getElementById('form-err').innerHTML=`<div class="err">⚠️ Errore di connessione</div>`;
-    btn.disabled=false;btn.textContent='🚀 Crea Account Istituzionale';
-  }
-}
-
-// ── Modali T&C / Privacy / Security ──────────────────────────
-function showModal(type){
-  const overlay=document.getElementById('modal-overlay');
-  const content=document.getElementById('modal-content');
-  const texts={
-    tc:`<h2>📋 Termini e Condizioni di Utilizzo</h2>
-        <p><strong style="color:#e2e8f0;">Versione 3.0 — Effective Date: 01/06/2026</strong></p>
-        <h3>1. Definizioni</h3>
-        <p>"Piattaforma" si riferisce a CryptoTrade Pro e tutti i suoi componenti tecnici. "Utente" è qualsiasi persona fisica o giuridica che accede alla Piattaforma. "Asset Digitali" si riferisce a criptovalute, token e strumenti finanziari digitali.</p>
-        <h3>2. Natura Non-Custodiale del Servizio</h3>
-        <p>CryptoTrade Pro opera esclusivamente come terminale di esecuzione e analisi. NON detiene mai fondi, chiavi private o asset degli utenti. Ogni connessione wallet avviene tramite protocolli decentralizzati (WalletConnect 2.0, MetaMask Snap API). La piattaforma non è un VASP (Virtual Asset Service Provider) ai sensi della Direttiva AML5.</p>
-        <h3>3. Conformità MiCA (EU 2023/1114)</h3>
-        <p>La piattaforma opera in osservanza del Regolamento UE 2023/1114 sui mercati delle criptoattività (MiCA). Gli utenti che operano nell'UE sono tenuti a rispettare le norme KYC/AML applicabili. La Piattaforma si riserva il diritto di sospendere account in caso di attività sospette ai sensi della Direttiva 2015/849/UE.</p>
-        <h3>4. Rischi di Mercato</h3>
-        <p>Il trading di asset digitali e strumenti finanziari comporta rischi significativi, inclusa la perdita totale del capitale investito. I rendimenti passati non garantiscono risultati futuri. CryptoTrade Pro NON fornisce consulenza finanziaria, fiscale o legale.</p>
-        <h3>5. Paper Trading Environment</h3>
-        <p>Il Paper Trading Environment utilizza capitali virtuali per la simulazione di strategie. I risultati ottenuti in ambiente Paper Trading non sono indicativi di performance reali. I prezzi in tempo reale sono forniti da Binance WebSocket API e Alpha Vantage.</p>
-        <h3>6. Privacy e GDPR</h3>
-        <p>Il trattamento dei dati personali avviene in conformità con il GDPR (Reg. EU 2016/679). Per i dettagli, consulta la Privacy Policy completa.</p>
-        <h3>7. Limitazione di Responsabilità</h3>
-        <p>Nei limiti massimi consentiti dalla legge applicabile, CryptoTrade Pro non è responsabile per perdite finanziarie, interruzioni del servizio, errori tecnici o accessi non autorizzati che non siano direttamente attribuibili a dolo o colpa grave della Piattaforma.</p>
-        <h3>8. Giurisdizione e Foro Competente</h3>
-        <p>I presenti Termini sono regolati dalla legge della Repubblica Italiana. Per ogni controversia è competente in via esclusiva il Tribunale di Milano, fatta salva la competenza del giudice del luogo di residenza del consumatore ai sensi del D.Lgs. 206/2005.</p>
-        <button class="modal-close" onclick="closeModal()">✓ Ho letto e compreso</button>`,
-    privacy:`<h2>🔒 Privacy Policy & GDPR Compliance</h2>
-        <p><strong style="color:#e2e8f0;">Titolare del Trattamento: CryptoTrade Pro | DPO: privacy@cryptotradepro.io | Data: 01/06/2026</strong></p>
-        <h3>1. Dati Raccolti</h3>
-        <p>Raccogliamo: (a) Dati di registrazione: nome, email, hash della password [mai in chiaro]; (b) Dati di utilizzo: log delle sessioni, preferenze dell'interfaccia; (c) Dati tecnici: indirizzo IP anonimizzato, tipo di browser, sistema operativo.</p>
-        <h3>2. Base Giuridica del Trattamento</h3>
-        <p>Art. 6(1)(b) GDPR — Esecuzione del contratto; Art. 6(1)(c) GDPR — Obbligo legale (AML/KYC); Art. 6(1)(f) GDPR — Legittimo interesse (sicurezza della piattaforma).</p>
-        <h3>3. Architettura Privacy-by-Design</h3>
-        <p>Password: hash SHA-256 con salt univoco per utente — mai recuperabili. Chiavi Private Wallet: rimangono esclusivamente nel dispositivo dell'utente. Dati sensibili admin: cifrati AES-256-GCM con chiave derivata da Master Passphrase (PBKDF2, mai persistita). Audit log: immutabili e crittograficamente firmati.</p>
-        <h3>4. Conservazione e Cancellazione</h3>
-        <p>Dati di registrazione: conservati per la durata del rapporto contrattuale + 7 anni (obbligo legale AML). Dati di sessione: 30 giorni di inattività. Diritto all'oblio: esercitabile via email, eccetto per i dati soggetti a obblighi di conservazione legale.</p>
-        <h3>5. Diritti dell'Interessato (Art. 15-22 GDPR)</h3>
-        <p>Accesso (Art. 15) · Rettifica (Art. 16) · Cancellazione (Art. 17) · Limitazione (Art. 18) · Portabilità (Art. 20) · Opposizione (Art. 21). Per esercitare i diritti: privacy@cryptotradepro.io. Risposta garantita entro 30 giorni.</p>
-        <h3>6. Trasferimenti Extra-UE</h3>
-        <p>I dati non vengono trasferiti al di fuori dello Spazio Economico Europeo senza adeguate garanzie (Standard Contractual Clauses o decisioni di adeguatezza della Commissione UE).</p>
-        <h3>7. Cookie e Tracking</h3>
-        <p>CryptoTrade Pro non utilizza cookie di profilazione o tracker di terze parti. Vengono utilizzati esclusivamente cookie tecnici strettamente necessari al funzionamento della piattaforma (localStorage per preferenze locali).</p>
-        <button class="modal-close" onclick="closeModal()">✓ Compreso</button>`,
-    security:`<h2>🛡️ Certificato di Sicurezza & Architettura</h2>
-        <p><strong style="color:#e2e8f0;">Security Audit v3.0 — 01/06/2026 | Versione: Production-Ready</strong></p>
-        <h3>Crittografia Implementata</h3>
-        <p>✅ SHA-256 per hash password (con salt utente-specifico)<br/>✅ AES-256-GCM per dati sensibili admin (Master Passphrase derivata via PBKDF2)<br/>✅ TLS 1.3 per tutte le comunicazioni di rete<br/>✅ Content Security Policy (CSP) header configurati<br/>✅ Subresource Integrity (SRI) su dipendenze CDN</p>
-        <h3>Architettura Non-Custodial</h3>
-        <p>Le chiavi private degli utenti NON transitano mai attraverso i server della piattaforma. Connessione wallet tramite WalletConnect 2.0 (protocollo E2E cifrato). Firma transazioni esclusivamente lato client (browser/hardware wallet).</p>
-        <h3>Multi-Sig Admin (Enterprise)</h3>
-        <p>Tutte le operazioni critiche dell'Admin Panel richiedono Consenso Multi-Signature 2-of-3. Compatibile con Ledger/Trezor via WalletConnect. Nessuna operazione critica eseguibile da singolo amministratore.</p>
-        <h3>RBAC (Role-Based Access Control)</h3>
-        <p>Ruoli: System Admin · Compliance Officer · Risk Manager · Support Agent. Accessi isolati per ruolo — nessun cross-permission non autorizzato. Principio del minimo privilegio applicato a ogni livello.</p>
-        <h3>Audit Trail Immutabile</h3>
-        <p>Ogni azione admin genera un hash SHA-256 concatenato al blocco precedente (struttura blockchain-like). Log immutabili — nessuna modifica retroattiva possibile. Exportabili per revisioni dei regolatori (MiCA/CONSOB compliance).</p>
-        <h3>Zero-Knowledge Backoffice</h3>
-        <p>L'admin può monitorare metriche di compliance e volumi di trading senza accedere a: chiavi private utenti, testo in chiaro delle password, contenuto cifrato dei wallet. Architettura certificata Privacy-Preserving.</p>
-        <button class="modal-close" onclick="closeModal()">✓ Compreso</button>`
+    setLoading(false);
   };
-  content.innerHTML=texts[type]||'';
-  overlay.style.display='flex';
-}
-function closeModal(){
-  document.getElementById('modal-overlay').style.display='none';
+  
+  return React.createElement("div", null,
+    React.createElement("h1", { className: "title" }, "Accedi"),
+    React.createElement("p", { className: "subtitle" }, "Bentornato su CryptoTrade Pro"),
+    err && React.createElement("div", { className: "error" }, err),
+    React.createElement("form", { onSubmit: doLogin },
+      React.createElement("label", null, "Email"),
+      React.createElement("input", { type: "email", placeholder: "tua@email.it", value: form.email, onChange: e => setForm({ ...form, email: e.target.value }), disabled: loading }),
+      React.createElement("label", null, "Password"),
+      React.createElement("input", { type: "password", placeholder: "••••••••", value: form.password, onChange: e => setForm({ ...form, password: e.target.value }), disabled: loading }),
+      React.createElement("button", { type: "submit", className: "btn btn-primary", disabled: loading }, loading ? "Caricamento..." : "Accedi")
+    ),
+    React.createElement("div", { style: { textAlign: 'center', marginTop: '16px', fontSize: '12px' } },
+      React.createElement("button", { type: "button", className: "btn-secondary", onClick: () => onSwitch("register"), style: { background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer' } }, "Non hai un account? Registrati")
+    )
+  );
 }
 
-// ── Init ──────────────────────────────────────────────────────
-const params=new URLSearchParams(window.location.search);
-if(params.get('mode')==='login') renderLogin();
-else renderRegister();
+function RegisterForm({ onSwitch }) {
+  const [form, setForm] = useState({ full_name: "", email: "", password: "", confirmPwd: "" });
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const [done, setDone] = useState(false);
+  
+  const doRegister = async e => {
+    e.preventDefault();
+    if (form.password !== form.confirmPwd) { setErr("Le password non coincidono"); return; }
+    if (form.password.length < 8) { setErr("Password minimo 8 caratteri"); return; }
+    
+    setLoading(true);
+    setErr("");
+    try {
+      const res = await callAuth("register", form);
+      if (res.success) {
+        try {
+          const loginRes = await callAuth("login", { email: form.email, password: form.password });
+          if (loginRes.success) {
+            store.set("crypto_session", { token: loginRes.token, userId: loginRes.userId, user: loginRes.user });
+            localStorage.setItem('user_logged_in', '1');
+            window.location.href = DASHBOARD_URL;
+            return;
+          }
+        } catch (e) {}
+        setDone(true);
+      } else {
+        setErr(res.error || "Errore");
+      }
+    } catch (e) {
+      setErr("Errore di rete");
+    }
+    setLoading(false);
+  };
+  
+  if (done) return React.createElement("div", { style: { textAlign: 'center' } },
+    React.createElement("div", { style: { fontSize: '48px', marginBottom: '16px' } }, "✅"),
+    React.createElement("h2", { style: { color: '#22c55e', marginBottom: '12px' } }, "Registrazione completata!"),
+    React.createElement("p", { style: { color: '#9ca3af', fontSize: '14px', marginBottom: '16px' } }, "Account creato con successo!"),
+    React.createElement("button", { className: "btn btn-primary", onClick: () => onSwitch("login") }, "Accedi")
+  );
+  
+  return React.createElement("div", null,
+    React.createElement("h1", { className: "title" }, "Registrati"),
+    React.createElement("p", { className: "subtitle" }, "Crea il tuo account"),
+    err && React.createElement("div", { className: "error" }, err),
+    React.createElement("form", { onSubmit: doRegister },
+      React.createElement("label", null, "Nome completo"),
+      React.createElement("input", { type: "text", placeholder: "Mario Rossi", value: form.full_name, onChange: e => setForm({ ...form, full_name: e.target.value }), disabled: loading }),
+      React.createElement("label", null, "Email"),
+      React.createElement("input", { type: "email", placeholder: "tua@email.it", value: form.email, onChange: e => setForm({ ...form, email: e.target.value }), disabled: loading }),
+      React.createElement("label", null, "Password (min 8 caratteri)"),
+      React.createElement("input", { type: "password", placeholder: "••••••••", value: form.password, onChange: e => setForm({ ...form, password: e.target.value }), disabled: loading }),
+      React.createElement("label", null, "Conferma password"),
+      React.createElement("input", { type: "password", placeholder: "••••••••", value: form.confirmPwd, onChange: e => setForm({ ...form, confirmPwd: e.target.value }), disabled: loading }),
+      React.createElement("button", { type: "submit", className: "btn btn-primary", disabled: loading }, loading ? "Caricamento..." : "Registrati")
+    ),
+    React.createElement("div", { style: { textAlign: 'center', marginTop: '16px', fontSize: '12px' } },
+      React.createElement("button", { type: "button", className: "btn-secondary", onClick: () => onSwitch("login"), style: { background: 'none', border: 'none', color: '#a78bfa', cursor: 'pointer' } }, "Hai già un account? Accedi")
+    )
+  );
+}
+
+function App() {
+  const [page, setPage] = useState('register');
+  
+  return React.createElement("div", { className: "container" },
+    page === "register" && React.createElement(RegisterForm, { onSwitch: setPage }),
+    page === "login" && React.createElement(LoginForm, { onSwitch: setPage, onSuccess: () => window.location.href = DASHBOARD_URL })
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(React.createElement(App, null));
 </script>
 </body>
 </html>

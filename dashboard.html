@@ -51,8 +51,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);}
 
 /* ── LAYOUT ── */
 #app{display:flex;flex-direction:column;height:100%;}
-.page{display:none;flex:1;overflow:hidden;}
-.page.active{display:flex;flex-direction:column;}
+.page{display:none;flex:1;min-height:0;}
+.page.active{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
 #page-defi.active,#page-stocks.active,#page-settings.active{overflow:auto !important;display:flex !important;flex-direction:column !important;height:calc(100% - 46px) !important;}
 
 /* ── CARD ── */
@@ -205,13 +205,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);}
     }
     @media(max-width:900px){
       html,body{overflow:hidden;height:100%;}
-      #app{overflow:hidden;position:relative;}
-      .page.active{overflow-y:auto;overflow-x:hidden;}
-#page-defi.active,#page-stocks.active,#page-settings.active{
-  display:flex!important;flex-direction:column!important;
-  overflow-y:auto!important;overflow-x:hidden!important;
-  flex:1!important;min-height:0!important;
-}
+      #app{overflow:hidden;}
+      
       #dash-workspace{height:auto;min-height:min-content;overflow:visible;}
       #top-row{grid-template-columns:1fr;grid-template-rows:320px auto auto;}
       #chart-card{min-height:320px;}
@@ -310,7 +305,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);}
           <div class="card-hdr" style="gap:8px;flex-wrap:wrap;">
             <span id="chart-pair-label" style="font-size:12px;font-weight:700;">BTC/USDT</span>
             <div style="display:flex;gap:3px;flex-wrap:wrap;">
-              <button class="iv-btn" data-iv="1s"  onclick="setIv('1m',this)" title="Aggiornamento tick 1s">1s</button>
               <button class="iv-btn" data-iv="1m"  onclick="setIv('1m',this)">1m</button>
               <button class="iv-btn" data-iv="5m"  onclick="setIv('5m',this)">5m</button>
               <button class="iv-btn" data-iv="15m" onclick="setIv('15m',this)">15m</button>
@@ -756,7 +750,7 @@ function initChart() {
     grid:      { vertLines:{color:'rgba(255,255,255,0.03)'}, horzLines:{color:'rgba(255,255,255,0.03)'} },
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
     rightPriceScale: { borderColor:'rgba(255,255,255,0.07)' },
-    timeScale:       { borderColor:'rgba(255,255,255,0.07)', timeVisible:true, secondsVisible:false },
+    timeScale:       { borderColor:'rgba(255,255,255,0.07)', timeVisible:true, secondsVisible:true },
     handleScroll: true, handleScale: true,
   });
   candles = chart.addCandlestickSeries({
@@ -1150,10 +1144,10 @@ function placeOrder(side) {
       if (!ok) return; // errore già mostrato
     }
 
-    // ─── Registra nello storico (sia Paper Trading che reale) ───────
+    // ─── Registra nello storico (sia demo che reale) ───────
     S.history.unshift({id:'H'+Date.now(),date:new Date().toLocaleString('it-IT').replace(',',''),pair:S.currentPairLabel,type,side,qty,price,fee:+fee.toFixed(4),total:+total.toFixed(2),mode});
-    // Aggiorna balance solo in PAPER TRADING (in reale il saldo arriva dall'exchange)
-    if (mode === 'Paper Trading') {
+    // Aggiorna balance solo in DEMO (in reale il saldo arriva dall'exchange)
+    if (mode === 'demo') {
       if(side==='buy')  S.balance = +(S.balance - total - fee).toFixed(2);
       else              S.balance = +(S.balance + total - fee).toFixed(2);
       if(S.balance < 0) S.balance = 0;
@@ -1164,7 +1158,7 @@ function placeOrder(side) {
     if(S.orderTab!=='market')document.getElementById('o-price').value='';
     document.querySelectorAll('.pct-btn').forEach(b=>b.classList.remove('active'));
     recalcFee();
-    const modeLabel = mode==='real'?'[REALE]':'[PAPER TRADING]';
+    const modeLabel = mode==='real'?'[REALE]':'[DEMO]';
     showToast(`✅ ${modeLabel} ${side.toUpperCase()} ${type}\n${qty.toFixed(5)} @ $${f2(price)}\nFee: $${fee.toFixed(4)}`,side==='buy'?'#10b981':'#ef4444');
     logSecurityEvent('Trade Eseguito','Successo',`${modeLabel} ${side.toUpperCase()} ${qty.toFixed(5)} ${S.currentPairLabel}`);
   };
@@ -1189,39 +1183,39 @@ function renderBtm() {
   const c=document.getElementById('btm-content'), tab=S.btmTab;
   if(tab==='positions'){
     document.getElementById('btm-count').textContent=S.positions.length+' posizioni';
-    if(!S.positions.length){c.innerHTML=`<div class="empty">Nessuna posizione aperta</div>`;return;}
-    // Aggiornamento stabile senza rebuild DOM (evita saltellamento)
-    const existingTbl = c.querySelector('table.dt');
-    if(!existingTbl || existingTbl.dataset.posCount !== String(S.positions.length)){
-      c.innerHTML=`<table class="dt" data-pos-count="${S.positions.length}"><thead><tr>
-        <th>Coppia</th><th>Tipo</th><th>Qtà</th><th>Entrata</th><th>Attuale</th>
-        <th>Liquidazione</th><th>PnL USDT</th><th>PnL%</th><th></th>
-      </tr></thead><tbody id="pos-tbody">${S.positions.map((p,i)=>{
-        const pnl=S.price?(p.side==='buy'?1:-1)*(S.price-p.entry)*p.qty:0;
-        const pnlPct=p.entry?(pnl/(p.entry*p.qty)*100):0;
-        return `<tr data-pos-id="${i}">
-          <td><strong>${p.pair}</strong></td>
-          <td><span class="badge bg-${p.side}">${p.side.toUpperCase()}</span></td>
-          <td style="font-family:'JetBrains Mono',monospace;">${f5(p.qty)}</td>
-          <td style="font-family:'JetBrains Mono',monospace;">$${f2(p.entry)}</td>
-          <td id="pos-cur-${i}" style="font-family:'JetBrains Mono',monospace;">${S.price?'$'+f2(S.price):'—'}</td>
-          <td style="color:var(--yellow);font-family:'JetBrains Mono',monospace;">$${f2(p.liq)}</td>
-          <td id="pos-pnl-${i}" style="font-family:'JetBrains Mono',monospace;color:${pnl>=0?'var(--green)':'var(--red)'};">${pnl>=0?'+':''}${f2(pnl)} USDT</td>
-          <td id="pos-pct-${i}" style="font-family:'JetBrains Mono',monospace;color:${pnlPct>=0?'var(--green)':'var(--red)'};">${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%</td>
-          <td><button onclick="closePos(${i})" style="font-size:10px;padding:3px 10px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:4px;color:var(--red);cursor:pointer;white-space:nowrap;">Chiudi</button></td>
-        </tr>`;
-      }).join('')}</tbody></table>`;
+    if(!S.positions.length){c.innerHTML='<div class="empty">Nessuna posizione aperta</div>';return;}
+    const existTbl=c.querySelector('table.dt[data-pos]');
+    if(!existTbl||existTbl.dataset.pos!==String(S.positions.length)){
+      c.innerHTML='<table class="dt" data-pos="'+S.positions.length+'"><thead><tr>'+
+        '<th>Coppia</th><th>Tipo</th><th>Qtà</th><th>Entrata</th><th>Corrente</th>'+
+        '<th>Liquidazione</th><th>PnL USDT</th><th>PnL%</th><th></th>'+
+        '</tr></thead><tbody id="pos-tbody">'+
+        S.positions.map((p,i)=>{
+          const pnl=S.price?(p.side==='buy'?1:-1)*(S.price-p.entry)*p.qty:0;
+          const pp=p.entry?(pnl/(p.entry*p.qty)*100):0;
+          return '<tr data-pi="'+i+'">'+
+            '<td><strong>'+p.pair+'</strong></td>'+
+            '<td><span class="badge bg-'+p.side+'">'+p.side.toUpperCase()+'</span></td>'+
+            '<td style="font-family:monospace;">'+f5(p.qty)+'</td>'+
+            '<td style="font-family:monospace;">$'+f2(p.entry)+'</td>'+
+            '<td id="pc'+i+'" style="font-family:monospace;">'+(S.price?'$'+f2(S.price):'—')+'</td>'+
+            '<td style="color:var(--yellow);font-family:monospace;">$'+f2(p.liq)+'</td>'+
+            '<td id="ppnl'+i+'" style="font-family:monospace;color:'+(pnl>=0?'var(--green)':'var(--red)')+';">'+(pnl>=0?'+':'')+f2(pnl)+' USDT</td>'+
+            '<td id="ppct'+i+'" style="font-family:monospace;color:'+(pp>=0?'var(--green)':'var(--red)')+';">'+(pp>=0?'+':'')+pp.toFixed(2)+'%</td>'+
+            '<td><button onclick="closePos('+i+')" style="font-size:10px;padding:3px 8px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:4px;color:var(--red);cursor:pointer;">Chiudi</button></td>'+
+          '</tr>';
+        }).join('')+
+      '</tbody></table>';
     } else {
-      // Aggiorna solo i valori che cambiano (prezzo attuale, PnL) — DOM stabile
       S.positions.forEach((p,i)=>{
         const pnl=S.price?(p.side==='buy'?1:-1)*(S.price-p.entry)*p.qty:0;
-        const pnlPct=p.entry?(pnl/(p.entry*p.qty)*100):0;
-        const curEl=document.getElementById('pos-cur-'+i);
-        const pnlEl=document.getElementById('pos-pnl-'+i);
-        const pctEl=document.getElementById('pos-pct-'+i);
-        if(curEl) curEl.textContent=S.price?'$'+f2(S.price):'—';
-        if(pnlEl){ pnlEl.textContent=(pnl>=0?'+':'')+f2(pnl)+' USDT'; pnlEl.style.color=pnl>=0?'var(--green)':'var(--red)'; }
-        if(pctEl){ pctEl.textContent=(pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%'; pctEl.style.color=pnlPct>=0?'var(--green)':'var(--red)'; }
+        const pp=p.entry?(pnl/(p.entry*p.qty)*100):0;
+        const ec=document.getElementById('pc'+i);
+        const ep=document.getElementById('ppnl'+i);
+        const ept=document.getElementById('ppct'+i);
+        if(ec)ec.textContent=S.price?'$'+f2(S.price):'—';
+        if(ep){ep.textContent=(pnl>=0?'+':'')+f2(pnl)+' USDT';ep.style.color=pnl>=0?'var(--green)':'var(--red)';}
+        if(ept){ept.textContent=(pp>=0?'+':'')+pp.toFixed(2)+'%';ept.style.color=pp>=0?'var(--green)':'var(--red)';}
       });
     }
   if(tab==='pending'){
@@ -1274,32 +1268,33 @@ function cancelOrd(id){S.pending=S.pending.filter(o=>o.id!==id);renderBtm();}
 // ══════════════════════════════════════
 //  WATCHLIST
 // ══════════════════════════════════════
-let _wlWS=null, _wlLoading=false;
+let _wlLoading=false;
 async function loadWatchlist() {
   if(_wlLoading) return;
-  _wlLoading=true;
-  const grid=document.getElementById('wl-grid');
-  const hasData=ALL_PAIRS.some(p=>p._data&&p._data.price>0);
-  if(!hasData && grid) grid.innerHTML='<div style="padding:20px;color:var(--muted);font-size:12px;">⏳ Recupero quotazioni in tempo reale...</div>';
-  // Batch: prendi 50 simboli per chiamata (limite API Binance)
+  _wlLoading = true;
+  const grid = document.getElementById('wl-grid');
+  const hasData = ALL_PAIRS.some(p=>p._data&&p._data.price>0);
+  if(!hasData && grid) grid.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:12px;">⏳ Recupero quotazioni in tempo reale...</div>';
+  // Batch da 40 simboli (limite sicuro Binance)
   const allSyms = ALL_PAIRS.map(p=>p.sym);
   const batches = [];
-  for(let i=0;i<allSyms.length;i+=50) batches.push(allSyms.slice(i,i+50));
+  for(let i=0;i<allSyms.length;i+=40) batches.push(allSyms.slice(i,i+40));
   try {
     await Promise.all(batches.map(async batch=>{
-      const symbols = batch.map(s=>'"'+s+'"').join(',');
-      const r = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbols=['+symbols+']',{signal:AbortSignal.timeout(6000)});
+      const symsParam = '[' + batch.map(s=>'"'+s+'"').join(',') + ']';
+      const r = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbols='+encodeURIComponent(symsParam), {signal:AbortSignal.timeout(8000)});
       if(!r.ok) return;
       const data = await r.json();
       if(Array.isArray(data)) data.forEach(item=>{
-        const p=ALL_PAIRS.find(x=>x.sym===item.symbol);
-        if(p) p._data={price:+item.lastPrice,change:+item.priceChangePercent,vol:+item.volume*+item.lastPrice};
+        const p = ALL_PAIRS.find(x=>x.sym===item.symbol);
+        if(p) p._data = {price:+item.lastPrice, change:+item.priceChangePercent, vol:+item.volume*+item.lastPrice};
       });
     }));
-  } catch(e){ console.warn('WL fetch err',e); }
-  _wlLoading=false;
+  } catch(e){ console.warn('WL fetch error',e); }
+  _wlLoading = false;
   filterWL(document.getElementById('wl-search')?.value||'');
 }
+
 
 function filterWL(q) {
   const cat = document.getElementById('wl-filter').value;
@@ -1401,9 +1396,9 @@ async function viewExBalance(id) {
       showToast(`📊 ${id.toUpperCase()} — Saldo REALE:\nUSDT: ${usdt}\nBTC: ${btc}\nETH: ${eth}`, '#10b981');
     }
   } else {
-    // Paper Trading: mostra saldo Paper Trading da localStorage o default
+    // Demo: mostra saldo simulato da localStorage o default
     const saved = JSON.parse(localStorage.getItem('ct_balance_'+id) || '{}');
-    showToast(`📊 ${id.toUpperCase()} — Saldo Paper Trading [PAPER TRADING]:\nBTC: ${saved.BTC||'0.25'} | ETH: ${saved.ETH||'1.50'} | USDT: ${saved.USDT||'3,450.00'}`, '#f59e0b');
+    showToast(`📊 ${id.toUpperCase()} — Saldo simulato [DEMO]:\nBTC: ${saved.BTC||'0.25'} | ETH: ${saved.ETH||'1.50'} | USDT: ${saved.USDT||'3,450.00'}`, '#f59e0b');
   }
 }
 function saveExchangeAPI() {
@@ -1557,7 +1552,7 @@ async function decryptData(b64, password) {
 }
 
 // ══════════════════════════════════════
-//  2FA TOTP (Paper Trading client-side con HMAC-SHA1)
+//  2FA TOTP (simulato client-side con HMAC-SHA1)
 // ══════════════════════════════════════
 function generateTOTPSecret() {
   const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -1755,25 +1750,36 @@ function checkAuthRedirect() {
     // Mostra chip utente
     const chip = document.createElement('div');
     chip.style.cssText = 'display:flex;align-items:center;gap:6px;padding:3px 10px;border:1px solid var(--b);border-radius:5px;font-size:11px;color:var(--txt);';
-    const uname = localStorage.getItem('user_name')||'Utente';
-    chip.style.cssText += 'cursor:pointer;position:relative;user-select:none;';
-    chip.innerHTML = `<span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;"></span><span id="chip-username">${uname}</span><span style="color:var(--muted);font-size:9px;margin-left:3px;">▾</span>`;
+    const _uname = localStorage.getItem('user_name')||'Utente';
+    chip.innerHTML = `<span style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;"></span><span>${_uname}</span><span style="font-size:9px;color:var(--muted);margin-left:3px;">▾</span>`;
     chip.onclick = function(e){
       e.stopPropagation();
-      let menu = document.getElementById('user-dropdown');
-      if(menu){ menu.remove(); return; }
-      menu = document.createElement('div');
-      menu.id = 'user-dropdown';
-      menu.style.cssText = 'position:absolute;top:38px;right:0;background:#1a1f2e;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:6px;min-width:180px;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.5);';
+      const existing = document.getElementById('user-chip-menu');
+      if(existing){ existing.remove(); return; }
+      const menu = document.createElement('div');
+      menu.id = 'user-chip-menu';
+      menu.style.cssText = 'position:absolute;top:calc(100% + 8px);right:0;background:#1a1f2e;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:6px;min-width:190px;z-index:9999;box-shadow:0 10px 30px rgba(0,0,0,.6);';
       menu.innerHTML = `
-        <div style="padding:8px 10px;font-size:11px;color:var(--muted);border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:4px;">👤 ${uname}</div>
-        <div onclick="showPage('settings',document.querySelector('.nav-btn:last-of-type'));renderSettings();document.getElementById('user-dropdown')?.remove();" style="padding:7px 10px;font-size:12px;color:var(--txt);cursor:pointer;border-radius:5px;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background=''">⚙️ Impostazioni Account</div>
-        <div style="margin:4px 0;border-top:1px solid rgba(255,255,255,.07);"></div>
-        <div onclick="confirmLogout()" style="padding:7px 10px;font-size:12px;color:#ef4444;cursor:pointer;border-radius:5px;display:flex;align-items:center;gap:8px;" onmouseover="this.style.background='rgba(239,68,68,.08)'" onmouseout="this.style.background=''">🚪 Disconnetti</div>
-      `;
-      document.getElementById('topbar').style.position='relative';
-      document.getElementById('topbar').appendChild(menu);
-      setTimeout(()=>{ document.addEventListener('click',()=>document.getElementById('user-dropdown')?.remove(),{once:true}); },50);
+        <div style="padding:8px 12px 8px;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:4px;">
+          <div style="font-size:11px;font-weight:700;color:var(--txt);">${_uname}</div>
+          <div style="font-size:9px;color:var(--muted);">Sessione attiva · Non-Custodial</div>
+        </div>
+        <div onclick="showPage('settings',null);renderSettings();document.getElementById('user-chip-menu')?.remove();" 
+          style="padding:8px 12px;font-size:12px;cursor:pointer;border-radius:6px;display:flex;align-items:center;gap:8px;color:var(--txt);"
+          onmouseover="this.style.background='rgba(255,255,255,.05)'" onmouseout="this.style.background=''">
+          ⚙️ Impostazioni Account
+        </div>
+        <div style="margin:4px 6px;border-top:1px solid rgba(255,255,255,.07);"></div>
+        <div onclick="doLogout()" 
+          style="padding:8px 12px;font-size:12px;cursor:pointer;border-radius:6px;display:flex;align-items:center;gap:8px;color:#ef4444;"
+          onmouseover="this.style.background='rgba(239,68,68,.08)'" onmouseout="this.style.background=''">
+          🚪 Disconnetti sessione
+        </div>`;
+      // Posiziona il menu relativo alla topbar
+      const topbar = document.getElementById('topbar');
+      topbar.style.position = 'relative';
+      topbar.appendChild(menu);
+      setTimeout(()=>document.addEventListener('click',()=>document.getElementById('user-chip-menu')?.remove(),{once:true}),50);
     };
     document.getElementById('btn-register').parentNode.insertBefore(chip, document.getElementById('btn-register').nextSibling);
   }
@@ -1782,23 +1788,6 @@ function userLogout() {
   localStorage.removeItem('user_logged_in');
   localStorage.removeItem('user_name');
   window.location.reload();
-}
-function confirmLogout(){
-  document.getElementById('user-dropdown')?.remove();
-  // Crea modal conferma logout
-  const overlay = document.createElement('div');
-  overlay.id = 'logout-confirm-overlay';
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99999;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML=`<div style="background:#1a1f2e;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:24px;min-width:280px;text-align:center;">
-    <div style="font-size:28px;margin-bottom:10px;">🚪</div>
-    <div style="font-size:15px;font-weight:700;margin-bottom:6px;">Disconnetti sessione</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:18px;">Sei sicuro di voler disconnettere la sessione corrente?</div>
-    <div style="display:flex;gap:8px;justify-content:center;">
-      <button onclick="document.getElementById('logout-confirm-overlay').remove();" style="padding:8px 20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:7px;color:var(--txt);font-size:12px;cursor:pointer;">Annulla</button>
-      <button onclick="userLogout();" style="padding:8px 20px;background:#ef4444;border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Disconnetti</button>
-    </div>
-  </div>`;
-  document.body.appendChild(overlay);
 }
 
 // ══════════════════════════════════════
@@ -1813,8 +1802,6 @@ document.addEventListener('keydown',e=>{
 //  INIT
 // ══════════════════════════════════════
 window.addEventListener('DOMContentLoaded',()=>{
-  // Auto-refresh watchlist ogni 5 secondi se attiva
-  setInterval(()=>{ if(document.getElementById('page-watchlist')?.classList.contains('active')) loadWatchlist(); }, 5000);
   // ── INIT con protezione errori (fix pagina blu) ──
   try { initTradingModeBanner(); } catch(e){ console.warn('banner err',e); }
   // Nascondi loader
@@ -1833,13 +1820,13 @@ window.addEventListener('DOMContentLoaded',()=>{
 
 
 // ══════════════════════════════════════════════════════════
-// MODALITÀ TRADING: PAPER TRADING / REALE
+// MODALITÀ TRADING: DEMO / REALE
 // ══════════════════════════════════════════════════════════
 const TRADING_MODE_KEY = 'ct_trading_mode';
 const PROXY_URL_KEY    = 'ct_proxy_url';
 
 function getTradingMode() {
-  return localStorage.getItem(TRADING_MODE_KEY) || 'Paper Trading';
+  return localStorage.getItem(TRADING_MODE_KEY) || 'demo';
 }
 
 function getProxyUrl() {
@@ -1863,7 +1850,7 @@ function initTradingModeBanner() {
     banner.style.display = 'block';
     banner.style.background = '#f59e0b';
     banner.style.color = '#000';
-    banner.textContent = '🎮 PAPER TRADING — Trading Paper Trading, Ambiente di Paper Trading Istituzionale';
+    banner.textContent = '🎮 MODALITÀ DEMO — Trading simulato, nessun fondo reale';
     spacer.style.display = 'block';
     const tb = document.getElementById('topbar');
     if (tb) tb.style.top = '26px';
@@ -2030,6 +2017,16 @@ document.getElementById('modal-feedback')?.addEventListener('click', function(e)
 // Init badge al caricamento
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(updateFeedbackBadge, 500);
+  // Watchlist: ricarica prezzi ogni 8 secondi se la pagina è attiva
+  setInterval(()=>{ 
+    const wlPage = document.getElementById('page-watchlist');
+    if(wlPage && wlPage.classList.contains('active')) { loadWatchlist(); }
+  }, 8000);
+  // Auto-aggiorna PnL posizioni ogni secondo
+  setInterval(()=>{
+    const posPage = document.getElementById('page-dash');
+    if(posPage && posPage.classList.contains('active') && S.btmTab==='positions') renderBtm();
+  }, 1000);
 });
 // ──────────────────────────────────────────────────────────────
 </script>
@@ -2526,52 +2523,32 @@ document.addEventListener('DOMContentLoaded', () => {
 //  LOGOUT
 // ═══════════════════════════════════════════════════════════════
 function doLogout() {
-  if (!confirm('Sei sicuro di voler uscire?')) return;
+  const ov = document.createElement('div');
+  ov.id = 'logout-overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#1a1f2e;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:28px 24px;min-width:290px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6);';
+  box.innerHTML = `
+    <div style="font-size:32px;margin-bottom:10px;">🔐</div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:6px;color:#e2e8f0;">Disconnetti sessione</div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:20px;line-height:1.5;">Sei sicuro di voler terminare<br>la sessione corrente?</div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button id="logout-cancel-btn" style="padding:9px 22px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#e2e8f0;font-size:13px;cursor:pointer;">Annulla</button>
+      <button id="logout-confirm-btn" style="padding:9px 22px;background:#ef4444;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Disconnetti</button>
+    </div>`;
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+  document.getElementById('logout-cancel-btn').onclick = function(){ ov.remove(); };
+  document.getElementById('logout-confirm-btn').onclick = function(){ _executeLogout(); };
+}
+function _executeLogout(){
   localStorage.removeItem('user_logged_in');
   localStorage.removeItem('user_email');
   localStorage.removeItem('user_name');
-  sessionStorage.clear();
-  showToast('👋 Logout effettuato con successo', '#10b981');
-  setTimeout(() => { window.location.href = 'crypto_register_v3_fixed.html?mode=login'; }, 1200);
+  localStorage.removeItem('crypto_session');
+  window.location.href = 'crypto_register_v3_fixed.html?mode=login';
 }
 
-// Aggiorna visibilità logout button
-(function() {
-  const orig = window.checkAuthRedirect;
-  window.checkAuthRedirect = function() {
-    if (orig) orig();
-    const loggedIn = localStorage.getItem('user_logged_in');
-    const logoutBtn = document.getElementById('btn-logout');
-    if (logoutBtn) logoutBtn.style.display = loggedIn ? 'inline-flex' : 'none';
-  };
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-      const loggedIn = localStorage.getItem('user_logged_in');
-      const lb = document.getElementById('btn-logout');
-      if (lb) lb.style.display = loggedIn ? 'inline-flex' : 'none';
-    }, 300);
-  });
-})();
-
-// ═══════════════════════════════════════════════════════════════
-//  SHOW PAGE — estendi per nuove pagine
-// ═══════════════════════════════════════════════════════════════
-const _origShowPage = window.showPage;
-window.showPage = function(name, btn) {
-  const newPages = ['defi','stocks','settings'];
-  const allPages = document.querySelectorAll('.page');
-  const allBtns  = document.querySelectorAll('.nav-btn');
-  allPages.forEach(p => p.classList.remove('active'));
-  allBtns.forEach(b => b.classList.remove('active'));
-  const pg = document.getElementById('page-' + name);
-  if (pg) pg.classList.add('active');
-  if (btn) btn.classList.add('active');
-};
-
-// ═══════════════════════════════════════════════════════════════
-//  SETTINGS
-// ═══════════════════════════════════════════════════════════════
-const SETTINGS_KEY = 'ctp_settings';
 function loadSettings() {
   return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"lang":"it","currency":"USD","slippage":0.5,"notif_tx_confirmed":true,"notif_tx_failed":true,"notif_health_factor":true,"notif_price_alerts":false}');
 }
@@ -2766,8 +2743,8 @@ function renderDefiWallets() {
   });
 }
 
-// Token Paper Trading per il portfolio DeFi
-const MOCK_DEFI_TOKENS = [
+// Token demo per il portfolio DeFi
+const DEMO_DEFI_TOKENS = [
   { symbol:'ETH',  name:'Ethereum',   balance:0.85,  price:3420,  color:'#627eea' },
   { symbol:'LINK', name:'Chainlink',  balance:45.0,  price:18.5,  color:'#2a5ada' },
   { symbol:'UNI',  name:'Uniswap',    balance:120.0, price:9.8,   color:'#ff007a' },
@@ -2778,7 +2755,7 @@ const MOCK_DEFI_TOKENS = [
 function renderDefiTokens() {
   const list = document.getElementById('defi-token-list');
   if (!list) return;
-  const tokens = MOCK_DEFI_TOKENS;
+  const tokens = DEMO_DEFI_TOKENS;
   const total = tokens.reduce((s, t) => s + t.balance * t.price, 0);
   list.innerHTML = tokens.map(t => {
     const val = t.balance * t.price;
@@ -2985,8 +2962,8 @@ async function loadStockQuick(symbol) {
   document.getElementById('stock-price-display').textContent = '$—';
 
   // Usa Yahoo Finance via proxy pubblico / Alpaca paper
-  // Per Paper Trading usiamo prezzi simulati realistici
-  const MOCK_STOCKS = {
+  // Per demo usiamo prezzi simulati realistici
+  const DEMO_STOCKS = {
     AAPL: { name:'Apple Inc.', price:213.50, open:211.20, high:215.80, low:210.50, volume:'58.2M', mktcap:'3.28T', change:+1.09 },
     TSLA: { name:'Tesla Inc.', price:248.75, open:244.00, high:252.30, low:243.50, volume:'92.1M', mktcap:'793B', change:+1.96 },
     NVDA: { name:'NVIDIA Corp.', price:131.45, open:129.80, high:133.20, low:129.10, volume:'234.5M', mktcap:'3.21T', change:+1.27 },
@@ -2997,8 +2974,8 @@ async function loadStockQuick(symbol) {
     META: { name:'Meta Platforms', price:542.70, open:539.00, high:545.80, low:538.20, volume:'14.7M', mktcap:'1.37T', change:+0.69 },
   };
 
-  // Paper Trading Environment prezzo live con oscillazione ±0.3%
-  const base = MOCK_STOCKS[symbol] || { name: symbol + ' Corp.', price: 100 + Math.random()*400, open:100, high:110, low:95, volume:'5M', mktcap:'N/A', change: (Math.random()-0.5)*4 };
+  // Simulazione prezzo live con oscillazione ±0.3%
+  const base = DEMO_STOCKS[symbol] || { name: symbol + ' Corp.', price: 100 + Math.random()*400, open:100, high:110, low:95, volume:'5M', mktcap:'N/A', change: (Math.random()-0.5)*4 };
   const livePrice = base.price * (1 + (Math.random() - 0.5) * 0.006);
   currentStockPrice = parseFloat(livePrice.toFixed(2));
   const spreadPrice = currentStockPrice * (1 + SPREAD_PCT); // prezzo con spread
@@ -3051,7 +3028,7 @@ function loadTradingViewWidget(symbol) {
     });
     <\/script>`;
   container.appendChild(wrapper);
-  // Fallback: grafico Paper Trading con LightweightCharts
+  // Fallback: grafico simulato con LightweightCharts
   setTimeout(() => {
     if (!container.querySelector('iframe')) {
       drawSimulatedStockChart(symbol);
