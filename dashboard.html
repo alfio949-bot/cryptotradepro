@@ -1374,7 +1374,22 @@ html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);}
   'use strict';
 
   // ── CONFIGURAZIONE ─────────────────────────────────────
-  var AG_KEY        = 'CryptoPro2026';            // Chiave di accesso provvisoria
+  // ── Passkey personalizzata per utente ──────────────────────────────────
+var AG_KEY = (function() {
+  // 1. Priorità: passkey utente da sessionStorage (messa da register.html)
+  var sk = sessionStorage.getItem('user_passkey');
+  if (sk && sk.startsWith('CTP-')) return sk;
+  // 2. Prova a recuperare dal profilo utente in localStorage
+  try {
+    var sess = JSON.parse(localStorage.getItem('ct_session') || 'null');
+    if (sess && sess.userId) {
+      var pk = localStorage.getItem('user_passkey_' + sess.userId);
+      if (pk && pk.startsWith('CTP-')) return pk;
+    }
+  } catch(e) {}
+  // 3. Fallback admin (modifica questa chiave se vuoi)
+  return 'CryptoPro2026';
+})();
   var AG_MAX_TRIES  = 5;                           // Tentativi massimi
   var AG_BASE_LOCK  = 30;                          // Secondi di lockout base
   var AG_SESSION_KEY= 'ag_unlocked';              // Key per sessionStorage
