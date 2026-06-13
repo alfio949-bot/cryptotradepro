@@ -230,7 +230,8 @@ function RegisterForm({ onSwitch }) {
 }
 
 function App() {
-  const [page, setPage] = useState('register');
+  const _initPage = new URLSearchParams(window.location.search).get('mode') || 'register';
+  const [page, setPage] = useState(_initPage);
   
   return React.createElement("div", { className: "container" },
     page === "register" && React.createElement(RegisterForm, { onSwitch: setPage }),
