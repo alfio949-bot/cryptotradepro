@@ -52,7 +52,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);}
 /* ── LAYOUT ── */
 #app{display:flex;flex-direction:column;height:100%;}
 .page{display:none;flex:1;min-height:0;}
-.page.active{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;}
+.page.active{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;height:calc(100vh - 80px);}
 #page-defi.active,#page-stocks.active,#page-settings.active{overflow:auto !important;display:flex !important;flex-direction:column !important;height:calc(100% - 46px) !important;}
 
 /* ── CARD ── */
@@ -609,6 +609,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);}
     </div>
   </div>
 
+  <div id="pages-wrapper" style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;">
   <!-- ══ PAGE: DASHBOARD (TRADING) ══ -->
   <div id="page-dash" class="page active">
     <div id="dash-workspace">
@@ -1412,6 +1413,32 @@ function setIv(iv) {
 // ══════════════════════════════════════
 //  PAIR PICKER
 // ══════════════════════════════════════
+
+// ── CoinGecko fallback mapping (sym → coingecko_id) ──
+const CG_MAP = {
+  'BTCUSDT':'bitcoin','ETHUSDT':'ethereum','BNBUSDT':'binancecoin',
+  'XRPUSDT':'ripple','SOLUSDT':'solana','ADAUSDT':'cardano',
+  'TRXUSDT':'tron','TONUSDT':'the-open-network','AVAXUSDT':'avalanche-2',
+  'DOTUSDT':'polkadot','LTCUSDT':'litecoin','BCHUSDT':'bitcoin-cash',
+  'XLMUSDT':'stellar','ETCUSDT':'ethereum-classic','ATOMUSDT':'cosmos',
+  'NEARUSDT':'near','ALGOUSDT':'algorand','FTMUSDT':'fantom',
+  'MATICUSDT':'matic-network','ICPUSDT':'internet-computer','VETUSDT':'vechain',
+  'HBARUSDT':'hedera-hashgraph','XTZUSDT':'tezos','ZILUSDT':'zilliqa',
+  'STXUSDT':'blockstack','APTUSDT':'aptos','SUIUSDT':'sui',
+  'SEIUSDT':'sei-network','INJUSDT':'injective-protocol','LINKUSDT':'chainlink',
+  'UNIUSDT':'uniswap','AAVEUSDT':'aave','COMPUSDT':'compound-governance-token',
+  'CRVUSDT':'curve-dao-token','MKRUSDT':'maker','GRTUSDT':'the-graph',
+  'DOGEUSDT':'dogecoin','SHIBUSDT':'shiba-inu','PEPEUSDT':'pepe',
+  'APEUSDT':'apecoin','SANDUSDT':'the-sandbox','MANAUSDT':'decentraland',
+  'AXSUSDT':'axie-infinity','GALAUSDT':'gala','ENJUSDT':'enjincoin',
+  'ARBUSDT':'arbitrum','OPUSDT':'optimism','LDOUSDT':'lido-dao',
+  'RNDRUSDT':'render-token','FETUSDT':'fetch-ai','AGIXUSDT':'singularitynet',
+  'OCEANUSDT':'ocean-protocol','IMXUSDT':'immutable-x','FLOWUSDT':'flow',
+  'EGLDUSDT':'elrond-erd-2','THETAUSDT':'theta-token','FTMUSDT':'fantom',
+};
+let _cgPricesCache = null;
+let _cgCacheTime = 0;
+
 const ALL_PAIRS = [
   // ── TOP CAP ──────────────────────────────────────────
   {sym:'BTCUSDT', label:'BTC/USDT', name:'Bitcoin',            icon:'₿', color:'#f7931a', cat:'top'},
@@ -1856,23 +1883,54 @@ async function loadWatchlist() {
   _wlLoading = true;
   const grid = document.getElementById('wl-grid');
   const hasData = ALL_PAIRS.some(p=>p._data&&p._data.price>0);
-  if(!hasData && grid) grid.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:12px;">⏳ Recupero quotazioni in tempo reale...</div>';
-  // Batch da 40 simboli (limite sicuro Binance)
+  if(!hasData && grid) grid.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:12px;">⏳ Recupero quotazioni…</div>';
+
+  let binanceOk = false;
   const allSyms = ALL_PAIRS.map(p=>p.sym);
   const batches = [];
   for(let i=0;i<allSyms.length;i+=40) batches.push(allSyms.slice(i,i+40));
+
+  // ── Tentativo 1: Binance API ──
   try {
     await Promise.all(batches.map(async batch=>{
       const symsParam = '[' + batch.map(s=>'"'+s+'"').join(',') + ']';
-      const r = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbols='+encodeURIComponent(symsParam), {signal:AbortSignal.timeout(8000)});
-      if(!r.ok) return;
+      const r = await fetch('https://api.binance.com/api/v3/ticker/24hr?symbols='+encodeURIComponent(symsParam), {signal:AbortSignal.timeout(5000)});
+      if(!r.ok) throw new Error('binance_err');
       const data = await r.json();
-      if(Array.isArray(data)) data.forEach(item=>{
-        const p = ALL_PAIRS.find(x=>x.sym===item.symbol);
-        if(p) p._data = {price:+item.lastPrice, change:+item.priceChangePercent, vol:+item.volume*+item.lastPrice};
-      });
+      if(Array.isArray(data) && data.length > 0) {
+        binanceOk = true;
+        data.forEach(item=>{
+          const p = ALL_PAIRS.find(x=>x.sym===item.symbol);
+          if(p) p._data = {price:+item.lastPrice, change:+item.priceChangePercent, vol:+item.volume*+item.lastPrice};
+        });
+      }
     }));
-  } catch(e){ console.warn('WL fetch error',e); }
+  } catch(e){ console.warn('Binance non disponibile, uso CoinGecko fallback'); }
+
+  // ── Fallback: CoinGecko API ──
+  if(!binanceOk || !ALL_PAIRS.some(p=>p._data&&p._data.price>0)) {
+    try {
+      const now = Date.now();
+      if(!_cgPricesCache || now - _cgCacheTime > 30000) {
+        const cgIds = [...new Set(Object.values(CG_MAP))].join(',');
+        const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${cgIds}&vs_currencies=usd&include_24hr_change=true`, {signal:AbortSignal.timeout(8000)});
+        if(r.ok) {
+          _cgPricesCache = await r.json();
+          _cgCacheTime = now;
+        }
+      }
+      if(_cgPricesCache) {
+        ALL_PAIRS.forEach(p=>{
+          const cgId = CG_MAP[p.sym];
+          if(cgId && _cgPricesCache[cgId]) {
+            const info = _cgPricesCache[cgId];
+            p._data = {price: info.usd||0, change: info.usd_24h_change||0, vol: 0};
+          }
+        });
+      }
+    } catch(e){ console.warn('CoinGecko fallback error', e); }
+  }
+
   _wlLoading = false;
   filterWL(document.getElementById('wl-search')?.value||'');
 }
@@ -3954,6 +4012,7 @@ function renderStocksPortfolio() {
           <span style="color:${pnlPct>=0?'var(--green)':'var(--red)'};">${pnlPct>=0?'+':''}${pnlPct.toFixed(2)}%</span>
         </div>
       </div>
+  </div><!-- /pages-wrapper -->
     `;
   }).join('');
 }
