@@ -442,9 +442,47 @@ function RegisterForm({ onSwitch }) {
 }
 
 // ── App root ─────────────────────────────────────────────────────────────
+function PasskeyPreview() {
+  const pk = 'CTP-' + Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('') +
+             '-' + Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
+  const [copied, setCopied] = useState(false);
+  const copy = () => { navigator.clipboard.writeText(pk).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);}); };
+  return React.createElement("div", null,
+    React.createElement("div",{style:{textAlign:'center',marginBottom:'20px'}},
+      React.createElement("div",{style:{fontSize:'52px',marginBottom:'8px'}},"🎉"),
+      React.createElement("h2",{style:{fontSize:'22px',fontWeight:800,
+        background:'linear-gradient(135deg,#22c55e,#06b6d4)',WebkitBackgroundClip:'text',
+        WebkitTextFillColor:'transparent'}},"Registrazione completata!"),
+      React.createElement("p",{style:{color:'#9ca3af',fontSize:'13px',marginTop:'6px'}},"Ecco la tua Passkey personale di accesso")
+    ),
+    React.createElement("div",{className:"passkey-box"},
+      React.createElement("div",{style:{fontSize:'12px',color:'#9ca3af',marginBottom:'4px'}},"🔑 LA TUA PASSKEY PERSONALE"),
+      React.createElement("div",{className:"passkey-code",onClick:copy,title:"Clicca per copiare"},pk),
+      React.createElement("div",{className:"copy-hint"},
+        copied ? React.createElement("span",{style:{color:'#22c55e'}},"✅ Copiata!") : "👆 Clicca per copiare"
+      )
+    ),
+    React.createElement("div",{className:"success-box"},"📧 Passkey inviata a demo@example.it — controlla la tua casella (anche spam)."),
+    React.createElement("div",{className:"warning-box"},
+      "⚠️ IMPORTANTE: Salva questa passkey in un posto sicuro. "+
+      "Viene richiesta ogni volta che apri la dashboard su un nuovo browser o dispositivo."
+    ),
+    React.createElement("button",{className:"btn btn-primary",style:{marginTop:'8px'},
+      onClick:()=>{window.location.href=DASHBOARD_URL;}},
+      "🚀 Entra nella Dashboard"
+    ),
+    React.createElement("div",{style:{textAlign:'center',marginTop:'12px',fontSize:'11px',color:'#4b5563'}},
+      "⚡ Anteprima — in produzione la passkey sarà unica per ogni utente"
+    )
+  );
+}
+
 function App() {
-  const _initPage = new URLSearchParams(window.location.search).get('mode') || 'register';
+  const params = new URLSearchParams(window.location.search);
+  const _initPage = params.get('mode') || 'register';
+  const isPreview = params.get('preview') === '1';
   const [page, setPage] = useState(_initPage);
+  if (isPreview) return React.createElement("div", { className: "container" }, React.createElement(PasskeyPreview, null));
   return React.createElement("div", { className: "container" },
     page === "register" && React.createElement(RegisterForm, { onSwitch: setPage }),
     page === "login"    && React.createElement(LoginForm, { onSwitch: setPage,
