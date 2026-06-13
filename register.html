@@ -30,7 +30,7 @@
 <script>
 const { useState } = React;
 
-const DASHBOARD_URL = "crypto_dashboard_v3_fixed.html";
+const DASHBOARD_URL = "dashboard.html";
 const store = {
   get: (k, d = null) => {
     try { return JSON.parse(localStorage.getItem(k) || "null") ?? d; } catch { return d; }

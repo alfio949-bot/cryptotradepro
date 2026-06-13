@@ -2317,10 +2317,10 @@ function goToAdmin() {
   window.location.href = 'crypto_admin_v3_fixed.html';
 }
 function goToLogin() {
-  window.location.href = 'crypto_register_v3_fixed.html?mode=login';
+  window.location.href = 'register.html?mode=login';
 }
 function goToRegister() {
-  window.location.href = 'crypto_register_v3_fixed.html?mode=register';
+  window.location.href = 'register.html?mode=register';
 }
 // Controlla parametro URL per mostrare sezione giusta al ritorno
 function checkAuthRedirect() {
@@ -3299,7 +3299,7 @@ function _executeLogout(){
   localStorage.removeItem('user_email');
   localStorage.removeItem('user_name');
   localStorage.removeItem('crypto_session');
-  window.location.href = 'crypto_register_v3_fixed.html?mode=login';
+  window.location.href = 'register.html?mode=login';
 }
 
 function loadSettings() {
