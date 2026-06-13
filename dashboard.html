@@ -50,10 +50,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--txt);}
 .nav-btn:hover,.nav-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
 
 /* ── LAYOUT ── */
-#app{display:flex;flex-direction:column;height:100%;}
+#app{overflow:hidden;display:flex;flex-direction:column;height:100%;}
 .page{display:none;flex:1;min-height:0;}
-.page.active{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;height:calc(100vh - 80px);}
-#page-defi.active,#page-stocks.active,#page-settings.active{overflow:auto !important;display:flex !important;flex-direction:column !important;height:calc(100% - 46px) !important;}
+.page.active{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;}
+#page-defi.active,#page-stocks.active,#page-settings.active{overflow:auto !important;display:flex !important;flex-direction:column !important;min-height:0 !important;}
 
 /* ── CARD ── */
 .card{background:var(--bg2);border:1px solid var(--b);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;}
